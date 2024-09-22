@@ -42,3 +42,14 @@ export interface Subject {
   lab_count: number;
   lab_equipment: string;
 }
+
+export interface Slot {
+  id: number;
+  lecturer_id: number;
+  subject_name: string;
+  subject_type: number;
+  classroom_number: string;
+  date: Date;
+  weight: number;
+  entropy: number;
+}
