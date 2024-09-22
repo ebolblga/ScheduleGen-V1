@@ -30,6 +30,7 @@ async function generateSchedule() {
       return;
     }
 
+    console.log(timetable);
     timetableSubjects = timetable;
     populateCalendar();
   } catch (err) {

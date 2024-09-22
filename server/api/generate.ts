@@ -1,11 +1,11 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import Database from 'better-sqlite3';
-import type { Slot, Subject } from '~/types/backend/db';
+import type { Slot, Subject, Classroom } from '~/types/backend/db';
 import type { TimetableSubject } from '~/types/frontend/api';
 
-const weekDayWeights = [0.75, 0.5, 0.5, 0.5, 0.5, 1];
-const timeSlotWeights = [1, 1, 0.75, 0.5, 0.25, 0.5, 0.75, 1];
+const weekDayWeights = [1, 2, 3, 2, 1, 0.1];
+const timeSlotWeights = [1, 1, 2, 3, 4, 4, 3, 1];
 let timetable: Slot[] = [];
 const startDate = new Date('2024-02-12');
 const endDate = new Date('2024-06-16');
@@ -15,10 +15,10 @@ function parseDateStrings(dateStrings: string[]): Date[] {
 };
 
 function computeWeight(date: Date, timeSlot: number): number {
-  const dayOfWeek = date.getDay();
+  const dayOfWeek = date.getDay() - 1;
   const weekDayWeight = weekDayWeights[dayOfWeek];
   const timeSlotWeight = timeSlotWeights[timeSlot];
-  return weekDayWeight + timeSlotWeight;
+  return weekDayWeight * timeSlotWeight;
 }
 
 const timeMap: { [key: number]: number } = {
@@ -59,13 +59,36 @@ function timetableToJson(timetable: Slot[]): TimetableSubject[] {
   return timetableSubjects;
 }
 
+function getRandomSlotByWeight(timetable: Slot[]): number {
+  const totalWeight = timetable.reduce((sum, slot) => sum + slot.weight, 0);
+
+  const random = Math.random() * totalWeight;
+
+  let cumulativeWeight = 0;
+  for (const slot of timetable) {
+    if (isNaN(slot.weight)) {
+      console.log(slot);
+      continue;
+    }
+
+    cumulativeWeight += slot.weight;
+    if (random < cumulativeWeight) {
+      return slot.id;
+    }
+  }
+
+  return 0;
+}
+
 export default defineEventHandler(async (event) => {
   // Заполняем массив предметов
   // const stmt = db.prepare('SELECT COUNT(*) as count FROM Groups;');
   // const groupCount = stmt.get() as GroupCountResult;
   const db = new Database('server/db/database.db', { verbose: console.log });
-  const stmt = db.prepare('SELECT * FROM Subjects;');
-  const subjectsArray = stmt.get() as Subject[];
+  const stmt1 = db.prepare('SELECT * FROM Subjects;');
+  const subjectsArray = stmt1.all() as Subject[];
+  const stmt2 = db.prepare('SELECT * FROM Classrooms;');
+  const classroomArray = stmt2.all() as Classroom[];
   db.close();
 
   // Узнаём рабочие дни на семестр (весна 2024)
@@ -100,27 +123,58 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // timetable[0] = {
-  //   id: timetable[0].id,
-  //   lecturer_id: 0,
-  //   subject_name: "Какой то там предмет",
-  //   subject_type: 0,
-  //   classroom_number: "205a",
-  //   date: timetable[0].date,
-  //   weight: timetable[0].weight,
-  //   entropy: -1
-  // };
+  while (subjectsArray.length > 0) {
+    // Выбор случайного слота (Softmax function)
+    const randomSlotId: number = getRandomSlotByWeight(timetable);
 
-  // timetable[5] = {
-  //   id: timetable[5].id,
-  //   lecturer_id: 0,
-  //   subject_name: "Какой то там предмет",
-  //   subject_type: 1,
-  //   classroom_number: "205a",
-  //   date: timetable[5].date,
-  //   weight: timetable[5].weight,
-  //   entropy: -1
-  // };
+    // Выбор случайного предмета
+    const randomSubjectIndex = Math.floor(Math.random() * subjectsArray.length);
+
+    // Тут будет чек что препод свободен
+
+    // Выбор типа пары
+    let subjectType = 2;
+    if (subjectsArray[randomSubjectIndex].sem_count > 0) subjectType = 1;
+    if (subjectsArray[randomSubjectIndex].lecture_count > 0) subjectType = 0;
+
+    // Выбор случайного места
+    const randomClassroomIndex = Math.floor(Math.random() * classroomArray.length);
+
+    // Вставляем предмет
+    timetable[randomSlotId] = {
+      id: timetable[randomSlotId].id,
+      lecturer_id: timetable[randomSlotId].lecturer_id,
+      subject_name: subjectsArray[randomSubjectIndex].subject_name,
+      subject_type: subjectType,
+      classroom_number: classroomArray[randomClassroomIndex].classroom_number,
+      date: timetable[randomSlotId].date,
+      weight: 0,
+      entropy: timetable[randomSlotId].entropy
+    }
+
+    // Удаляем тип предмета из массива предметов
+    switch (subjectType) {
+      case 0: {
+        subjectsArray[randomSubjectIndex].lecture_count--;
+        break;
+      }
+
+      case 1: {
+        subjectsArray[randomSubjectIndex].sem_count--;
+        break;
+      }
+
+      case 2: {
+        subjectsArray[randomSubjectIndex].lab_count--;
+        break;
+      }
+    }
+
+    // Проверяем есть ли ещё пары в этом предмете
+    if (subjectsArray[randomSubjectIndex].lecture_count === 0 && subjectsArray[randomSubjectIndex].sem_count === 0 && subjectsArray[randomSubjectIndex].lab_count === 0) {
+      subjectsArray.splice(randomSubjectIndex, 1);
+    }
+  }
 
   return timetableToJson(timetable);
 });
