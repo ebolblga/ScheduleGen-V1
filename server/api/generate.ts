@@ -35,8 +35,14 @@ const timeMap: { [key: number]: number } = {
 const classTypeMap = new Map<number, string>([
   [0, 'Лекция'],
   [1, 'Семинар'],
-  [2, 'Лабораторная работа']
+  [2, 'Лабораторное занятие']
 ]);
+
+const subjectTypeMap = new Map<number, keyof Subject>([
+  [0, "lecture_count"],
+  [1, "sem_count"],
+  [2, "lab_count"]
+])
 
 function timetableToJson(timetable: Slot[]): TimetableSubject[] {
   const timetableSubjects: TimetableSubject[] = [];
@@ -78,6 +84,56 @@ function getRandomSlotByWeight(timetable: Slot[]): number {
   }
 
   return 0;
+}
+
+function populateSubject(timetable: Slot[], randomSlotId: number): Slot[] {
+  //     // Вставляем предметы
+  //     let successfulPopulationsCounter = 1;
+  //     let breakFlag = false;
+  //     let maxPopulationsAvailable = 1;
+
+  //     switch (subjectType) {
+  //       case 0: {
+  //         maxPopulationsAvailable = subjectsArray[randomSubjectIndex].lecture_count;
+  //         break;
+  //       }
+
+  //       case 1: {
+  //         maxPopulationsAvailable = subjectsArray[randomSubjectIndex].sem_count;
+  //         break;
+  //       }
+
+  //       case 2: {
+  //         maxPopulationsAvailable = subjectsArray[randomSubjectIndex].lab_count;
+  //         break;
+  //       }
+  //     }
+
+  // while (successfulPopulationsCounter <= maxPopulationsAvailable) {
+  //   timetable[randomSlotId] = {
+  //     id: timetable[randomSlotId].id,
+  //     lecturer_id: timetable[randomSlotId].lecturer_id,
+  //     subject_name: subjectsArray[randomSubjectIndex].subject_name,
+  //     subject_type: subjectType,
+  //     classroom_number: classroomArray[randomClassroomIndex].classroom_number,
+  //     date: timetable[randomSlotId].date,
+  //     weight: 0,
+  //     entropy: timetable[randomSlotId].entropy
+  //   }
+
+  //   successfulPopulationsCounter++;
+  //   randomSlotId += 48;
+  //   if (randomSlotId >= timetable.length) {
+  //     breakFlag = true;
+  //     break;
+  //   }
+  //   if (timetable[randomSlotId].subject_name !== '') {
+  //     breakFlag = true;
+  //     break;
+  //   }
+  // }
+
+  return timetable;
 }
 
 export default defineEventHandler(async (event) => {
@@ -125,7 +181,7 @@ export default defineEventHandler(async (event) => {
 
   while (subjectsArray.length > 0) {
     // Выбор случайного слота (Softmax function)
-    const randomSlotId: number = getRandomSlotByWeight(timetable);
+    let randomSlotId: number = getRandomSlotByWeight(timetable);
 
     // Выбор случайного предмета
     const randomSubjectIndex = Math.floor(Math.random() * subjectsArray.length);
@@ -140,7 +196,6 @@ export default defineEventHandler(async (event) => {
     // Выбор случайного места
     const randomClassroomIndex = Math.floor(Math.random() * classroomArray.length);
 
-    // Вставляем предмет
     timetable[randomSlotId] = {
       id: timetable[randomSlotId].id,
       lecturer_id: timetable[randomSlotId].lecturer_id,
@@ -153,22 +208,10 @@ export default defineEventHandler(async (event) => {
     }
 
     // Удаляем тип предмета из массива предметов
-    switch (subjectType) {
-      case 0: {
-        subjectsArray[randomSubjectIndex].lecture_count--;
-        break;
-      }
+    const property = subjectTypeMap.get(subjectType);
+    if (property) subjectsArray[randomSubjectIndex][property]--;
 
-      case 1: {
-        subjectsArray[randomSubjectIndex].sem_count--;
-        break;
-      }
-
-      case 2: {
-        subjectsArray[randomSubjectIndex].lab_count--;
-        break;
-      }
-    }
+    // populateSubject();
 
     // Проверяем есть ли ещё пары в этом предмете
     if (subjectsArray[randomSubjectIndex].lecture_count === 0 && subjectsArray[randomSubjectIndex].sem_count === 0 && subjectsArray[randomSubjectIndex].lab_count === 0) {

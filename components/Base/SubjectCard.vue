@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { defineProps } from 'vue';
-import type { TimetableSubject } from '~/types/backend/db';
+import type { TimetableSubject } from '~/types/frontend/api';
 
 const props = defineProps<{
   subject: TimetableSubject;

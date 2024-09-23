@@ -47,7 +47,7 @@ interface Event {
 const classTypeMap = new Map<string, string>([
   ['Лекция', "green"],
   ['Семинар', "blue"],
-  ['Лабораторная работа', "yellow"]
+  ['Лабораторное занятие', "yellow"]
 ]);
 
 function populateCalendar() {
