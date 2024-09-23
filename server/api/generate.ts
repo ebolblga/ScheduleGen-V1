@@ -180,18 +180,18 @@ export default defineEventHandler(async (event) => {
   }
 
   while (subjectsArray.length > 0) {
-    // Выбор случайного слота (Softmax function)
-    let randomSlotId: number = getRandomSlotByWeight(timetable);
-
     // Выбор случайного предмета
     const randomSubjectIndex = Math.floor(Math.random() * subjectsArray.length);
-
-    // Тут будет чек что препод свободен
 
     // Выбор типа пары
     let subjectType = 2;
     if (subjectsArray[randomSubjectIndex].sem_count > 0) subjectType = 1;
-    if (subjectsArray[randomSubjectIndex].lecture_count > 0) subjectType = 0;
+    if (subjectsArray[randomSubjectIndex].lecture_count > 0) subjectType = 0
+
+    // Выбор случайного слота (Softmax function)
+    let randomSlotId: number = getRandomSlotByWeight(timetable);
+
+    // Тут будет чек что препод свободен;
 
     // Выбор случайного места
     const randomClassroomIndex = Math.floor(Math.random() * classroomArray.length);

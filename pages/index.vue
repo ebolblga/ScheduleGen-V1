@@ -30,12 +30,45 @@ async function generateSchedule() {
       return;
     }
 
-    console.log(timetable);
-    timetableSubjects = timetable;
+    console.log("Timetable length: ", timetable.length);
+
+    timetableSubjects = timetable.map(subject => ({
+      ...subject,
+      dateTime: new Date(subject.dateTime)
+    }));
+    numberSubjects();
     populateCalendar();
   } catch (err) {
     console.error('Ошибка фетчинга расписания:', err);
   }
+}
+
+function numberSubjects() {
+  const subjectGroups = new Map<string, TimetableSubject[]>();
+
+  timetableSubjects.forEach(subject => {
+    const key = `${subject.name}-${subject.type}-${subject.subgroup}`;
+    if (!subjectGroups.has(key)) {
+      subjectGroups.set(key, []);
+    }
+    subjectGroups.get(key)?.push(subject);
+  });
+
+  const updatedSubjects: TimetableSubject[] = [];
+
+  subjectGroups.forEach((group, key) => {
+    const total = group.length;
+
+    group.forEach((subject, index) => {
+      const numberedSubject: TimetableSubject = {
+        ...subject,
+        name: `${subject.name} ${index + 1}/${total}`
+      };
+      updatedSubjects.push(numberedSubject);
+    });
+  });
+
+  timetableSubjects = updatedSubjects;
 }
 
 interface Event {
@@ -57,7 +90,7 @@ function populateCalendar() {
     eventArray.push({
       key: subject.id.toString(),
       dot: classTypeMap.get(subject.type) || "blue",
-      dates: new Date(subject.dateTime)
+      dates: subject.dateTime
     });
   }
 
