@@ -56,7 +56,7 @@ function numberSubjects() {
 
   const updatedSubjects: TimetableSubject[] = [];
 
-  subjectGroups.forEach((group, key) => {
+  subjectGroups.forEach((group) => {
     const total = group.length;
 
     group.forEach((subject, index) => {
@@ -84,7 +84,7 @@ const classTypeMap = new Map<string, string>([
 ]);
 
 function populateCalendar() {
-  let eventArray: Event[] = [];
+  const eventArray: Event[] = [];
 
   for (const subject of timetableSubjects) {
     eventArray.push({
@@ -117,11 +117,11 @@ function getToday() {
 <template>
   <div class="h-screen p-3 flex justify-center items-center">
     <div class="w-[50vw] flex flex-col justify-center items-center">
-      <img width="300px" class="select-none" src="/stankin-logo-eng.svg" />
-      <BaseButton @click="generateSchedule" class="w-[300px] mt-5 mb-5">
+      <img width="300px" class="select-none" src="/stankin-logo-eng.svg" >
+      <BaseButton class="w-[300px] mt-5 mb-5" @click="generateSchedule">
         Сгенерировать расписание!
       </BaseButton>
-      <DatePicker :attributes="attrs" @click="getToday()" expanded :first-day-of-week="2" :color="'gray'" locale="ru" is-dark borderless title-position="left" class="rounded-lg" v-model="selectedDate" />
+      <DatePicker v-model="selectedDate" :attributes="attrs" expanded :first-day-of-week="2" :color="'gray'" locale="ru" is-dark borderless title-position="left" class="rounded-lg" @click="getToday()" />
       <div v-if="todaysList" class="overflow-auto h-[40vh] w-full scrollbar mt-3">
         <BaseSubjectCard v-for="subject in todaysList" :key="subject.id" :subject="subject" />
       </div>

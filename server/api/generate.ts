@@ -7,6 +7,8 @@ import type { TimetableSubject } from '~/types/frontend/api';
 const weekDayWeights = [1, 2, 3, 2, 1, 0.1];
 const timeSlotWeights = [1, 1, 2, 3, 4, 4, 3, 1];
 let timetable: Slot[] = [];
+let subjectsArray: Subject[] = [];
+let classroomArray: Classroom[] = [];
 const startDate = new Date('2024-02-12');
 const endDate = new Date('2024-06-16');
 
@@ -44,7 +46,7 @@ const subjectTypeMap = new Map<number, keyof Subject>([
   [2, "lab_count"]
 ])
 
-function timetableToJson(timetable: Slot[]): TimetableSubject[] {
+function timetableToJson(): TimetableSubject[] {
   const timetableSubjects: TimetableSubject[] = [];
   for (const slot of timetable) {
     if (slot.subject_name !== '') {
@@ -65,7 +67,7 @@ function timetableToJson(timetable: Slot[]): TimetableSubject[] {
   return timetableSubjects;
 }
 
-function getRandomSlotByWeight(timetable: Slot[]): number {
+function getRandomSlotByWeight(): number {
   const totalWeight = timetable.reduce((sum, slot) => sum + slot.weight, 0);
 
   const random = Math.random() * totalWeight;
@@ -86,65 +88,61 @@ function getRandomSlotByWeight(timetable: Slot[]): number {
   return 0;
 }
 
-function populateSubject(timetable: Slot[], randomSlotId: number): Slot[] {
-  //     // Вставляем предметы
-  //     let successfulPopulationsCounter = 1;
-  //     let breakFlag = false;
-  //     let maxPopulationsAvailable = 1;
+function populateSubject(randomSubjectIndex: number, subjectType: number, randomSlotId: number, randomClassroomIndex: number) {
+  try {
+    if (!timetable) {
+      console.error("Error: timetable is undefined or null");
+      return;
+    }
 
-  //     switch (subjectType) {
-  //       case 0: {
-  //         maxPopulationsAvailable = subjectsArray[randomSubjectIndex].lecture_count;
-  //         break;
-  //       }
+    if (randomSlotId < 0 || randomSlotId >= timetable.length) {
+      console.log("Exiting due to out-of-bounds randomSlotId:", randomSlotId);
+      return;
+    }
 
-  //       case 1: {
-  //         maxPopulationsAvailable = subjectsArray[randomSubjectIndex].sem_count;
-  //         break;
-  //       }
+    timetable[randomSlotId] = {
+      id: timetable[randomSlotId].id,
+      lecturer_id: timetable[randomSlotId].lecturer_id,
+      subject_name: subjectsArray[randomSubjectIndex].subject_name,
+      subject_type: subjectType,
+      classroom_number: classroomArray[randomClassroomIndex].classroom_number,
+      date: timetable[randomSlotId].date,
+      weight: 0,
+      entropy: timetable[randomSlotId].entropy
+    };
 
-  //       case 2: {
-  //         maxPopulationsAvailable = subjectsArray[randomSubjectIndex].lab_count;
-  //         break;
-  //       }
-  //     }
+    const property = subjectTypeMap.get(subjectType) as keyof Subject;
+    if (property) {
+      const value = subjectsArray[randomSubjectIndex][property];
 
-  // while (successfulPopulationsCounter <= maxPopulationsAvailable) {
-  //   timetable[randomSlotId] = {
-  //     id: timetable[randomSlotId].id,
-  //     lecturer_id: timetable[randomSlotId].lecturer_id,
-  //     subject_name: subjectsArray[randomSubjectIndex].subject_name,
-  //     subject_type: subjectType,
-  //     classroom_number: classroomArray[randomClassroomIndex].classroom_number,
-  //     date: timetable[randomSlotId].date,
-  //     weight: 0,
-  //     entropy: timetable[randomSlotId].entropy
-  //   }
+      if (typeof value === "number") {
+        subjectsArray[randomSubjectIndex][property]--;
 
-  //   successfulPopulationsCounter++;
-  //   randomSlotId += 48;
-  //   if (randomSlotId >= timetable.length) {
-  //     breakFlag = true;
-  //     break;
-  //   }
-  //   if (timetable[randomSlotId].subject_name !== '') {
-  //     breakFlag = true;
-  //     break;
-  //   }
-  // }
-
-  return timetable;
+        if (value - 1 > 1) {
+          // populateSubject(randomSubjectIndex, subjectType, randomSlotId + 48, randomClassroomIndex);
+          // populateSubject(randomSubjectIndex, subjectType, randomSlotId - 48, randomClassroomIndex);
+        } else if (value - 1 === 1) {
+          // populateSubject(randomSubjectIndex, subjectType, randomSlotId + 48, randomClassroomIndex);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error occurred in populateSubject:", error);
+  }
 }
 
+
 export default defineEventHandler(async (event) => {
+  const startTime = performance.now();
+
   // Заполняем массив предметов
   // const stmt = db.prepare('SELECT COUNT(*) as count FROM Groups;');
   // const groupCount = stmt.get() as GroupCountResult;
   const db = new Database('server/db/database.db', { verbose: console.log });
   const stmt1 = db.prepare('SELECT * FROM Subjects;');
-  const subjectsArray = stmt1.all() as Subject[];
+  subjectsArray = stmt1.all() as Subject[];
   const stmt2 = db.prepare('SELECT * FROM Classrooms;');
-  const classroomArray = stmt2.all() as Classroom[];
+  classroomArray = stmt2.all() as Classroom[];
   db.close();
 
   // Узнаём рабочие дни на семестр (весна 2024)
@@ -154,7 +152,17 @@ export default defineEventHandler(async (event) => {
   const workdays = parseDateStrings(workdaysStr);
 
   let idCounter = 0;
-  timetable = Array.from({ length: workdays.length * 8 });
+  // timetable = Array.from({ length: workdays.length * 8 });
+  timetable = Array.from({ length: workdays.length * 8 }, () => ({
+    id: -1,
+    lecturer_id: -1,
+    subject_name: '',
+    subject_type: -1,
+    classroom_number: '',
+    date: new Date(),
+    weight: 0,
+    entropy: -1
+  }));
 
   // Заполнение календаря пустыми слотами
   for (let day = 0; day < workdays.length; day++) {
@@ -189,9 +197,9 @@ export default defineEventHandler(async (event) => {
     if (subjectsArray[randomSubjectIndex].lecture_count > 0) subjectType = 0
 
     // Выбор случайного слота (Softmax function)
-    let randomSlotId: number = getRandomSlotByWeight(timetable);
+    const randomSlotId: number = getRandomSlotByWeight();
 
-    // Тут будет чек что препод свободен;
+    // Тут будет чек что преподаватель свободен;
 
     // Выбор случайного места
     const randomClassroomIndex = Math.floor(Math.random() * classroomArray.length);
@@ -211,7 +219,11 @@ export default defineEventHandler(async (event) => {
     const property = subjectTypeMap.get(subjectType);
     if (property) subjectsArray[randomSubjectIndex][property]--;
 
-    // populateSubject();
+
+
+    // populateSubject(randomSubjectIndex, subjectType, randomSlotId, randomClassroomIndex);
+
+
 
     // Проверяем есть ли ещё пары в этом предмете
     if (subjectsArray[randomSubjectIndex].lecture_count === 0 && subjectsArray[randomSubjectIndex].sem_count === 0 && subjectsArray[randomSubjectIndex].lab_count === 0) {
@@ -219,5 +231,6 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  return timetableToJson(timetable);
+  console.log(`Finished processing in ${performance.now() - startTime}ms`);
+  return timetableToJson();
 });

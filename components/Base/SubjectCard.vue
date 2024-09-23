@@ -39,9 +39,9 @@ function formatTime(date: Date, subjectType: string): string {
     <p
       class="text-sm font-semibold"
       :class="{
-        'text-[#0D7211]': subject.type === 'Лекция',
-        'text-[#1962DA]': subject.type === 'Семинар',
-        'text-[#8F5107]': subject.type === 'Лабораторное занятие'
+        'text-[#85b066]': subject.type === 'Лекция',
+        'text-[#6696b0]': subject.type === 'Семинар',
+        'text-[#c7b742]': subject.type === 'Лабораторное занятие'
       }"
     >
       {{ subject.type }}
