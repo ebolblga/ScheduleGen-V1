@@ -1,19 +1,22 @@
 <script setup lang="ts">
-import { DatePicker } from 'v-calendar';
-import 'v-calendar/style.css';
-import type { TimetableSubject } from '~/types/frontend/api';
+import { DatePicker } from "v-calendar";
+import "v-calendar/style.css";
+import type { TimetableSubject } from "~/types/frontend/api";
 
 useSeoMeta({
-  title: 'Генератор расписания',
-  description: 'Инструмент для генерации расписания МГТУ «СТАНКИН» учебных занятий ',
-  ogTitle: 'Генератор расписания',
-  ogDescription: 'Инструмент для генерации расписания МГТУ «СТАНКИН» учебных занятий ',
-  ogImage: '',
-  ogUrl: '',
-  twitterTitle: 'Генератор расписания',
-  twitterDescription: 'Инструмент для генерации расписания МГТУ «СТАНКИН» учебных занятий ',
-  twitterImage: '',
-  twitterCard: 'summary'
+  title: "Генератор расписания",
+  description:
+    "Инструмент для генерации расписания МГТУ «СТАНКИН» учебных занятий ",
+  ogTitle: "Генератор расписания",
+  ogDescription:
+    "Инструмент для генерации расписания МГТУ «СТАНКИН» учебных занятий ",
+  ogImage: "",
+  ogUrl: "",
+  twitterTitle: "Генератор расписания",
+  twitterDescription:
+    "Инструмент для генерации расписания МГТУ «СТАНКИН» учебных занятий ",
+  twitterImage: "",
+  twitterCard: "summary",
 });
 
 const selectedDate = ref(new Date("2024-02-12"));
@@ -22,38 +25,48 @@ const todaysList = ref<TimetableSubject[]>([]);
 let timetableSubjects: TimetableSubject[] = [];
 
 const holidays = [
-    "2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04", "2024-01-05", "2024-01-06", "2024-01-07",
-    "2024-02-23", "2024-03-08", "2024-05-01", "2024-05-09", "2024-06-12"
-  ].map(date => new Date(date));
-const startDate = new Date('2024-02-12');
-const endDate = new Date('2024-06-16');
+  "2024-01-01",
+  "2024-01-02",
+  "2024-01-03",
+  "2024-01-04",
+  "2024-01-05",
+  "2024-01-06",
+  "2024-01-07",
+  "2024-02-23",
+  "2024-03-08",
+  "2024-05-01",
+  "2024-05-09",
+  "2024-06-12",
+].map((date) => new Date(date));
+const startDate = new Date("2024-02-12");
+const endDate = new Date("2024-06-16");
 
 async function generateSchedule() {
   try {
-    const timetable = await $fetch<TimetableSubject[]>('/api/generate');
+    const timetable = await $fetch<TimetableSubject[]>("/api/generate");
 
     if (!timetable) {
-      console.warn('Расписание не пришло с бэкенда');
+      console.warn("Расписание не пришло с бэкенда");
       return;
     }
 
     console.log("Timetable length: ", timetable.length);
 
-    timetableSubjects = timetable.map(subject => ({
+    timetableSubjects = timetable.map((subject) => ({
       ...subject,
-      dateTime: new Date(subject.dateTime)
+      dateTime: new Date(subject.dateTime),
     }));
     numberSubjects();
     populateCalendar();
   } catch (err) {
-    console.error('Ошибка фетчинга расписания:', err);
+    console.error("Ошибка фетчинга расписания:", err);
   }
 }
 
 function numberSubjects() {
   const subjectGroups = new Map<string, TimetableSubject[]>();
 
-  timetableSubjects.forEach(subject => {
+  timetableSubjects.forEach((subject) => {
     const key = `${subject.name}-${subject.type}-${subject.subgroup}`;
     if (!subjectGroups.has(key)) {
       subjectGroups.set(key, []);
@@ -69,25 +82,27 @@ function numberSubjects() {
     group.forEach((subject, index) => {
       const numberedSubject: TimetableSubject = {
         ...subject,
-        name: `${subject.name} ${index + 1}/${total}`
+        name: `${subject.name} ${index + 1}/${total}`,
       };
       updatedSubjects.push(numberedSubject);
     });
   });
 
-  timetableSubjects = updatedSubjects.sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
+  timetableSubjects = updatedSubjects.sort(
+    (a, b) => a.dateTime.getTime() - b.dateTime.getTime(),
+  );
 }
 
 interface Event {
-    key: string;
-    dot: string;
-    dates: Date;
+  key: string;
+  dot: string;
+  dates: Date;
 }
 
 const classTypeMap = new Map<string, string>([
-  ['Лекция', "green"],
-  ['Семинар', "blue"],
-  ['Лабораторное занятие', "yellow"]
+  ["Лекция", "green"],
+  ["Семинар", "blue"],
+  ["Лабораторное занятие", "yellow"],
 ]);
 
 function populateCalendar() {
@@ -97,7 +112,7 @@ function populateCalendar() {
     eventArray.push({
       key: subject.id.toString(),
       dot: classTypeMap.get(subject.type) || "blue",
-      dates: subject.dateTime
+      dates: subject.dateTime,
     });
   }
 
@@ -121,7 +136,7 @@ function getToday() {
   }
 }
 
-const disabledDates = ref<{ start: Date | null, end: Date | null }[]>([
+const disabledDates = ref<{ start: Date | null; end: Date | null }[]>([
   // Выключить всё до начала семестра
   { start: null, end: new Date(startDate.getTime() - 86400000) },
 
@@ -129,22 +144,25 @@ const disabledDates = ref<{ start: Date | null, end: Date | null }[]>([
   { start: new Date(endDate.getTime() + 86400000), end: null },
 
   // Выключить праздники
-  ...holidays.map(holiday => ({ start: holiday, end: holiday })),
+  ...holidays.map((holiday) => ({ start: holiday, end: holiday })),
 
   // Выключить все воскресенья
-  ...generateDisabledSundays(startDate, endDate)
+  ...generateDisabledSundays(startDate, endDate),
 ]);
 
 function generateDisabledSundays(start: Date, end: Date) {
   const disabledSundays = [];
-  let currentDate = new Date(start);
+  const currentDate = new Date(start);
   const dayOfWeek = currentDate.getDay();
   const daysUntilSunday = (7 - dayOfWeek) % 7;
   currentDate.setDate(currentDate.getDate() + daysUntilSunday);
 
   // Добавление всех воскресений
   while (currentDate <= end) {
-    disabledSundays.push({ start: new Date(currentDate), end: new Date(currentDate) });
+    disabledSundays.push({
+      start: new Date(currentDate),
+      end: new Date(currentDate),
+    });
     currentDate.setDate(currentDate.getDate() + 7);
   }
 
@@ -154,27 +172,47 @@ function generateDisabledSundays(start: Date, end: Date) {
 <template>
   <div class="h-screen p-3 flex justify-center items-center">
     <div class="w-[50vw] flex flex-col justify-center items-center">
-      <img width="300px" class="select-none" src="/stankin-logo-eng.svg" >
+      <NuxtImg width="300px" class="select-none" src="/stankin-logo-eng.svg" placeholder />
       <BaseButton class="w-[300px] mt-5 mb-5" @click="generateSchedule">
         Сгенерировать расписание!
       </BaseButton>
-      <DatePicker v-model="selectedDate" :disabled-dates="disabledDates" :attributes="attrs" expanded :first-day-of-week="2" :color="'gray'" locale="ru" is-dark borderless title-position="left" class="rounded-lg" @click="getToday()" />
-      <div v-if="todaysList" class="overflow-auto h-[40vh] w-full scrollbar mt-3">
-        <BaseSubjectCard v-for="subject in todaysList" :key="subject.id" :subject="subject" />
+      <DatePicker
+        v-model="selectedDate"
+        :disabled-dates="disabledDates"
+        :attributes="attrs"
+        expanded
+        :first-day-of-week="2"
+        :color="'gray'"
+        locale="ru"
+        is-dark
+        borderless
+        title-position="left"
+        class="rounded-lg"
+        @click="getToday()"
+      />
+      <div
+        v-if="todaysList"
+        class="overflow-auto h-[40vh] w-full scrollbar mt-3"
+      >
+        <BaseSubjectCard
+          v-for="subject in todaysList"
+          :key="subject.id"
+          :subject="subject"
+        />
       </div>
     </div>
   </div>
 </template>
 <style>
 .vc-container {
-    background-color: #1D2021;
+  background-color: #1d2021;
 }
 
 .vc-container .vc-weekday {
-    color:#e6cf90;
+  color: #e6cf90;
 }
 
 .vc-container .vc-weekday-1 {
-    color:#836117;
+  color: #836117;
 }
 </style>

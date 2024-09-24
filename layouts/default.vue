@@ -1,26 +1,26 @@
 <script setup lang="ts">
 useHead({
   htmlAttrs: {
-      lang: 'ru'
-    },
+    lang: "ru",
+  },
   meta: [
-    { charset: 'utf-8' },
-    { name: 'STANKIN Schedule Generator', content: 'Author: ebolblga' }
+    { charset: "utf-8" },
+    { name: "STANKIN Schedule Generator", content: "Author: ebolblga" },
   ],
   link: [
     {
-      rel: 'prefetch',
-      href: '/Montserrat-Regular.ttf',
-      as: 'font',
-      type: 'font/woff2',
-      crossorigin: 'anonymous'
+      rel: "prefetch",
+      href: "/Montserrat-Regular.ttf",
+      as: "font",
+      type: "font/woff2",
+      crossorigin: "anonymous",
     },
     {
-      rel: 'icon',
-      href: '/favicon.ico',
-      crossorigin: 'anonymous'
-    }
-  ]
+      rel: "icon",
+      href: "/favicon.ico",
+      crossorigin: "anonymous",
+    },
+  ],
 });
 </script>
 <template>
@@ -37,8 +37,8 @@ body {
 }
 
 @font-face {
-  font-family: 'Montserrat';
-  src: url('/Montserrat-Regular.ttf') format('truetype');
+  font-family: "Montserrat";
+  src: url("/Montserrat-Regular.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -60,6 +60,6 @@ body {
 }
 
 .scrollbar::-webkit-scrollbar-corner {
-    background: transparent;
+  background: transparent;
 }
 </style>
