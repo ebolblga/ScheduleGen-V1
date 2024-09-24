@@ -12,17 +12,6 @@ let timetable: Slot[] = [];
 let subjectsArray: Subject[] = [];
 let classroomArray: Classroom[] = [];
 
-function parseDateStrings(dateStrings: string[]): Date[] {
-  return dateStrings.map((dateStr) => new Date(dateStr));
-}
-
-function computeWeight(date: Date, timeSlot: number): number {
-  const dayOfWeek = date.getDay() - 1;
-  const weekDayWeight = weekDayWeights[dayOfWeek];
-  const timeSlotWeight = timeSlotWeights[timeSlot];
-  return weekDayWeight * timeSlotWeight;
-}
-
 const timeMap: { [key: number]: number } = {
   0: 8 * 60 + 30, // 8:30 -> 510 minutes
   1: 10 * 60 + 20, // 10:20 -> 620 minutes
@@ -45,6 +34,13 @@ const subjectTypeMap = new Map<number, keyof Subject>([
   [1, "sem_count"],
   [2, "lab_count"],
 ]);
+
+function computeWeight(date: Date, timeSlot: number): number {
+  const dayOfWeek = date.getDay() - 1;
+  const weekDayWeight = weekDayWeights[dayOfWeek];
+  const timeSlotWeight = timeSlotWeights[timeSlot];
+  return weekDayWeight * timeSlotWeight;
+}
 
 function timetableToJson(): TimetableSubject[] {
   const timetableSubjects: TimetableSubject[] = [];
@@ -123,12 +119,17 @@ function populateSubject(
 ) {
   try {
     if (!timetable) {
-      console.error("Error: timetable is undefined or null");
+      console.error("Error: timetable - undefined или null");
       return;
     }
 
     if (randomSlotId < 0 || randomSlotId >= timetable.length) {
-      console.log("Exiting due to out-of-bounds randomSlotId:", randomSlotId);
+      // console.log("randomSlotId за пределами: ", randomSlotId);
+      return;
+    }
+
+    if (timetable[randomSlotId].weight === 0) {
+      // console.log("randomSlotId уже занят: ", randomSlotId);
       return;
     }
 
@@ -143,6 +144,8 @@ function populateSubject(
       entropy: timetable[randomSlotId].entropy,
     };
 
+    reduceWeights(randomSlotId, timetable[randomSlotId].date);
+
     const property = subjectTypeMap.get(subjectType) as keyof Subject;
     if (property) {
       const value = subjectsArray[randomSubjectIndex][property];
@@ -150,20 +153,36 @@ function populateSubject(
       if (typeof value === "number") {
         subjectsArray[randomSubjectIndex][property]--;
 
-        if (value - 1 > 1) {
-          // populateSubject(randomSubjectIndex, subjectType, randomSlotId + 48, randomClassroomIndex);
-          // populateSubject(randomSubjectIndex, subjectType, randomSlotId - 48, randomClassroomIndex);
-        } else if (value - 1 === 1) {
-          // populateSubject(randomSubjectIndex, subjectType, randomSlotId + 48, randomClassroomIndex);
+        // Тут вместо +- 48 искать слот с такой же датой неделю в перёд
+        if (value > 2) {
+          populateSubject(
+            randomSubjectIndex,
+            subjectType,
+            randomSlotId - 48,
+            randomClassroomIndex,
+          );
+          populateSubject(
+            randomSubjectIndex,
+            subjectType,
+            randomSlotId + 48,
+            randomClassroomIndex,
+          );
+        } else if (value === 2) {
+          populateSubject(
+            randomSubjectIndex,
+            subjectType,
+            randomSlotId + 48,
+            randomClassroomIndex,
+          );
         }
       }
     }
   } catch (error) {
-    console.error("Error occurred in populateSubject:", error);
+    console.error("Ошибка в populateSubject:", error);
   }
 }
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
   const startTime = performance.now();
 
   // Заполняем массив предметов
@@ -180,7 +199,7 @@ export default defineEventHandler(async (event) => {
   const filePath = join(process.cwd(), "server/db", "workdays.json");
   const data = await fs.readFile(filePath, "utf8");
   const workdaysStr: string[] = JSON.parse(data);
-  const workdays = parseDateStrings(workdaysStr);
+  const workdays = workdaysStr.map((dateStr) => new Date(dateStr));
 
   let idCounter = 0;
   // timetable = Array.from({ length: workdays.length * 8 });
@@ -237,24 +256,29 @@ export default defineEventHandler(async (event) => {
       Math.random() * classroomArray.length,
     );
 
-    timetable[randomSlotId] = {
-      id: timetable[randomSlotId].id,
-      lecturer_id: timetable[randomSlotId].lecturer_id,
-      subject_name: subjectsArray[randomSubjectIndex].subject_name,
-      subject_type: subjectType,
-      classroom_number: classroomArray[randomClassroomIndex].classroom_number,
-      date: timetable[randomSlotId].date,
-      weight: 0,
-      entropy: timetable[randomSlotId].entropy,
-    };
+    // timetable[randomSlotId] = {
+    //   id: timetable[randomSlotId].id,
+    //   lecturer_id: timetable[randomSlotId].lecturer_id,
+    //   subject_name: subjectsArray[randomSubjectIndex].subject_name,
+    //   subject_type: subjectType,
+    //   classroom_number: classroomArray[randomClassroomIndex].classroom_number,
+    //   date: timetable[randomSlotId].date,
+    //   weight: 0,
+    //   entropy: timetable[randomSlotId].entropy,
+    // };
 
-    // Удаляем тип предмета из массива предметов
-    const property = subjectTypeMap.get(subjectType);
-    if (property) subjectsArray[randomSubjectIndex][property]--;
+    // // Удаляем тип предмета из массива предметов
+    // const property = subjectTypeMap.get(subjectType);
+    // if (property) subjectsArray[randomSubjectIndex][property]--;
 
-    reduceWeights(randomSlotId, timetable[randomSlotId].date);
+    // reduceWeights(randomSlotId, timetable[randomSlotId].date);
 
-    // populateSubject(randomSubjectIndex, subjectType, randomSlotId, randomClassroomIndex);
+    populateSubject(
+      randomSubjectIndex,
+      subjectType,
+      randomSlotId,
+      randomClassroomIndex,
+    );
 
     // Проверяем есть ли ещё пары в этом предмете
     if (

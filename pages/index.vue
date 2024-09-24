@@ -172,7 +172,12 @@ function generateDisabledSundays(start: Date, end: Date) {
 <template>
   <div class="h-screen p-3 flex justify-center items-center">
     <div class="w-[50vw] flex flex-col justify-center items-center">
-      <NuxtImg width="300px" class="select-none" src="/stankin-logo-eng.svg" placeholder />
+      <NuxtImg
+        width="300px"
+        class="select-none"
+        src="/stankin-logo-eng.svg"
+        placeholder
+      />
       <BaseButton class="w-[300px] mt-5 mb-5" @click="generateSchedule">
         Сгенерировать расписание!
       </BaseButton>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TimetableSubject } from "~/types/frontend/api";
 
-const props = defineProps<{
+defineProps<{
   subject: TimetableSubject;
 }>();
 

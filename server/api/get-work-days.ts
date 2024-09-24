@@ -14,7 +14,7 @@ const isWorkday = (date: Date, holidays: Date[]): boolean => {
   return isWeekday && !isHoliday;
 };
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
   // Определяем начальную и конечную даты
   const startDate = new Date("2024-02-12");
   const endDate = new Date("2024-06-16");
