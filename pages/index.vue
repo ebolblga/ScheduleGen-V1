@@ -68,7 +68,7 @@ function numberSubjects() {
     });
   });
 
-  timetableSubjects = updatedSubjects;
+  timetableSubjects = updatedSubjects.sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime());
 }
 
 interface Event {

@@ -24,3 +24,4 @@ logs
 !.env.example
 /server/db/database.db
 /server/db/workdays.json
+/server/db/timetable.json

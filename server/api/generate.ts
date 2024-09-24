@@ -6,6 +6,8 @@ import type { TimetableSubject } from '~/types/frontend/api';
 
 const weekDayWeights = [1, 2, 3, 2, 1, 0.1];
 const timeSlotWeights = [1, 1, 2, 3, 4, 4, 3, 1];
+const dayReductionWeight = 0.4; // Чем меньше значение тем меньше пар в день
+const dayReductionFalloff = 0.1;  // Чем меньше значение тем больше окон
 let timetable: Slot[] = [];
 let subjectsArray: Subject[] = [];
 let classroomArray: Classroom[] = [];
@@ -86,6 +88,37 @@ function getRandomSlotByWeight(): number {
   }
 
   return 0;
+}
+
+function reduceWeights(randomSlotId: number, dateTime: Date) {
+  const startTime = new Date(dateTime);
+  startTime.setHours(8, 30);
+  const endTime = new Date(dateTime);
+  endTime.setHours(21, 20);
+
+  // console.log(`\n\nStart: ${startTime}, end: ${endTime}, input: ${dateTime}`)
+
+  let i = randomSlotId - 1;
+  let reduction = dayReductionWeight;
+
+  while (i >= 0 && timetable[i].date >= startTime) {
+    timetable[i].weight *= reduction;
+    // console.log(`${timetable[i].date}`)
+    i--;
+    reduction -= dayReductionFalloff;
+    if (reduction < 0) reduction = 0;
+  }
+
+  i = randomSlotId + 1;
+  reduction = dayReductionWeight;
+
+  while (i < timetable.length && timetable[i].date <= endTime) {
+    timetable[i].weight *= reduction;
+    // console.log(`${timetable[i].date}`)
+    i++;
+    reduction -= dayReductionFalloff;
+    if (reduction < 0) reduction = 0;
+  }
 }
 
 function populateSubject(randomSubjectIndex: number, subjectType: number, randomSlotId: number, randomClassroomIndex: number) {
@@ -219,6 +252,8 @@ export default defineEventHandler(async (event) => {
     const property = subjectTypeMap.get(subjectType);
     if (property) subjectsArray[randomSubjectIndex][property]--;
 
+    reduceWeights(randomSlotId, timetable[randomSlotId].date);
+
 
 
     // populateSubject(randomSubjectIndex, subjectType, randomSlotId, randomClassroomIndex);
@@ -232,5 +267,7 @@ export default defineEventHandler(async (event) => {
   }
 
   console.log(`Finished processing in ${performance.now() - startTime}ms`);
+  const filePath2 = join(process.cwd(), '/server/db', 'timetable.json');
+  await fs.writeFile(filePath2, JSON.stringify(timetable, null, 2), 'utf8');
   return timetableToJson();
 });
