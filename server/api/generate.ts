@@ -11,8 +11,6 @@ const dayReductionFalloff = 0.1;  // Чем меньше значение тем
 let timetable: Slot[] = [];
 let subjectsArray: Subject[] = [];
 let classroomArray: Classroom[] = [];
-const startDate = new Date('2024-02-12');
-const endDate = new Date('2024-06-16');
 
 function parseDateStrings(dateStrings: string[]): Date[] {
   return dateStrings.map(dateStr => new Date(dateStr));
@@ -96,17 +94,14 @@ function reduceWeights(randomSlotId: number, dateTime: Date) {
   const endTime = new Date(dateTime);
   endTime.setHours(21, 20);
 
-  // console.log(`\n\nStart: ${startTime}, end: ${endTime}, input: ${dateTime}`)
-
   let i = randomSlotId - 1;
   let reduction = dayReductionWeight;
 
   while (i >= 0 && timetable[i].date >= startTime) {
     timetable[i].weight *= reduction;
-    // console.log(`${timetable[i].date}`)
     i--;
     reduction -= dayReductionFalloff;
-    if (reduction < 0) reduction = 0;
+    if (reduction < 0) reduction = 0.0001;
   }
 
   i = randomSlotId + 1;
@@ -114,10 +109,9 @@ function reduceWeights(randomSlotId: number, dateTime: Date) {
 
   while (i < timetable.length && timetable[i].date <= endTime) {
     timetable[i].weight *= reduction;
-    // console.log(`${timetable[i].date}`)
     i++;
     reduction -= dayReductionFalloff;
-    if (reduction < 0) reduction = 0;
+    if (reduction < 0) reduction = 0.0001;
   }
 }
 

@@ -19,7 +19,14 @@ useSeoMeta({
 const selectedDate = ref(new Date("2024-02-12"));
 const attrs = ref<Event[]>([]);
 const todaysList = ref<TimetableSubject[]>([]);
-let timetableSubjects: TimetableSubject[] = []
+let timetableSubjects: TimetableSubject[] = [];
+
+const holidays = [
+    "2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04", "2024-01-05", "2024-01-06", "2024-01-07",
+    "2024-02-23", "2024-03-08", "2024-05-01", "2024-05-09", "2024-06-12"
+  ].map(date => new Date(date));
+const startDate = new Date('2024-02-12');
+const endDate = new Date('2024-06-16');
 
 async function generateSchedule() {
   try {
@@ -113,6 +120,36 @@ function getToday() {
     }
   }
 }
+
+const disabledDates = ref<{ start: Date | null, end: Date | null }[]>([
+  // Выключить всё до начала семестра
+  { start: null, end: new Date(startDate.getTime() - 86400000) },
+
+  // Выключить всё после конца семестра
+  { start: new Date(endDate.getTime() + 86400000), end: null },
+
+  // Выключить праздники
+  ...holidays.map(holiday => ({ start: holiday, end: holiday })),
+
+  // Выключить все воскресенья
+  ...generateDisabledSundays(startDate, endDate)
+]);
+
+function generateDisabledSundays(start: Date, end: Date) {
+  const disabledSundays = [];
+  let currentDate = new Date(start);
+  const dayOfWeek = currentDate.getDay();
+  const daysUntilSunday = (7 - dayOfWeek) % 7;
+  currentDate.setDate(currentDate.getDate() + daysUntilSunday);
+
+  // Добавление всех воскресений
+  while (currentDate <= end) {
+    disabledSundays.push({ start: new Date(currentDate), end: new Date(currentDate) });
+    currentDate.setDate(currentDate.getDate() + 7);
+  }
+
+  return disabledSundays;
+}
 </script>
 <template>
   <div class="h-screen p-3 flex justify-center items-center">
@@ -121,7 +158,7 @@ function getToday() {
       <BaseButton class="w-[300px] mt-5 mb-5" @click="generateSchedule">
         Сгенерировать расписание!
       </BaseButton>
-      <DatePicker v-model="selectedDate" :attributes="attrs" expanded :first-day-of-week="2" :color="'gray'" locale="ru" is-dark borderless title-position="left" class="rounded-lg" @click="getToday()" />
+      <DatePicker v-model="selectedDate" :disabled-dates="disabledDates" :attributes="attrs" expanded :first-day-of-week="2" :color="'gray'" locale="ru" is-dark borderless title-position="left" class="rounded-lg" @click="getToday()" />
       <div v-if="todaysList" class="overflow-auto h-[40vh] w-full scrollbar mt-3">
         <BaseSubjectCard v-for="subject in todaysList" :key="subject.id" :subject="subject" />
       </div>
