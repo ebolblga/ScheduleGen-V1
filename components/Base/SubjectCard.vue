@@ -14,14 +14,13 @@ const timeMap = new Map([
   ["18:00", "18:00 - 19:30"],
   ["19:40", "19:40 - 21:10"],
   ["21:20", "21:20 - 22:50"],
-  ["08:30l", "08:30 - 12:00"],
-  ["10:20l", "10:20 - 14:00"],
-  ["12:20l", "12:20 - 15:50"],
-  ["14:10l", "14:10 - 17:40"],
-  ["16:00l", "16:00 - 19:30"],
-  ["18:00l", "18:00 - 21:10"],
-  ["19:40l", "19:40 - 22:50"],
-  ["21:20l", "21:20 - 01:00"],
+  ["08:30 ", "08:30 - 12:00"],
+  ["10:20 ", "10:20 - 14:00"],
+  ["12:20 ", "12:20 - 15:50"],
+  ["14:10 ", "14:10 - 17:40"],
+  ["16:00 ", "16:00 - 19:30"],
+  ["18:00 ", "18:00 - 21:10"],
+  ["19:40 ", "19:40 - 22:50"]
 ]);
 
 function formatTime(date: Date, subjectType: string): string {
@@ -29,7 +28,7 @@ function formatTime(date: Date, subjectType: string): string {
   const minutes: string = String(date.getMinutes()).padStart(2, "0");
   const formattedTime =
     subjectType === "Лабораторное занятие"
-      ? `${hours}:${minutes}l`
+      ? `${hours}:${minutes} `
       : `${hours}:${minutes}`;
   const timeRange = timeMap.get(formattedTime);
   return timeRange ? timeRange : formattedTime;

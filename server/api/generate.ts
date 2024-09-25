@@ -1,16 +1,20 @@
 import { promises as fs } from "fs";
 import { join } from "path";
 import Database from "better-sqlite3";
-import type { Slot, Subject, Classroom } from "~/types/backend/db";
+import type { Slot, Subject, SubjectClassroom, Classroom, SubjectLecturer, Lecturer } from "~/types/backend/db";
 import type { TimetableSubject } from "~/types/frontend/api";
 
 const weekDayWeights = [1, 2, 3, 2, 1, 0.1];
-const timeSlotWeights = [1, 1, 2, 3, 4, 4, 3, 1];
+const timeSlotWeights = [0.25, 0.5, 1, 2, 3, 4, 5, 4];
 const dayReductionWeight = 0.4; // Чем меньше значение тем меньше пар в день
 const dayReductionFalloff = 0.1; // Чем меньше значение тем больше окон
+const consistentWeeks = true; // Старается соблюсти одинаковые предметы по неделям
 let timetable: Slot[] = [];
-let subjectsArray: Subject[] = [];
-let classroomArray: Classroom[] = [];
+let subjects: Subject[] = [];
+const subjectClassrooms = new Map<string, string[]>();
+let classrooms: Classroom[] = [];
+const subjectLecturers = new Map<string, number[]>();
+const lecturers = new Map<number, Lecturer>();
 
 const timeMap: { [key: number]: number } = {
   0: 8 * 60 + 30, // 8:30 -> 510 minutes
@@ -46,9 +50,15 @@ function timetableToJson(): TimetableSubject[] {
   const timetableSubjects: TimetableSubject[] = [];
   for (const slot of timetable) {
     if (slot.subject_name !== "") {
+      let fullName = "";
+      const lecturer = lecturers.get(slot.lecturer_id);
+      if (lecturer) {
+        fullName = `${lecturer.surname} ${lecturer.name} ${lecturer.patronymic}`;
+      }
+
       timetableSubjects.push({
         id: slot.id,
-        groups: [slot.lecturer_id.toString()],
+        groups: [fullName],
         name: slot.subject_name,
         type: classTypeMap.get(slot.subject_type) || "",
         subgroup: "",
@@ -115,7 +125,7 @@ function populateSubject(
   randomSubjectIndex: number,
   subjectType: number,
   randomSlotId: number,
-  randomClassroomIndex: number,
+  randomClassroom: string,
 ) {
   try {
     if (!timetable) {
@@ -135,10 +145,10 @@ function populateSubject(
 
     timetable[randomSlotId] = {
       id: timetable[randomSlotId].id,
-      lecturer_id: timetable[randomSlotId].lecturer_id,
-      subject_name: subjectsArray[randomSubjectIndex].subject_name,
+      lecturer_id: chooseLecturer(subjects[randomSubjectIndex].subject_name),
+      subject_name: subjects[randomSubjectIndex].subject_name,
       subject_type: subjectType,
-      classroom_number: classroomArray[randomClassroomIndex].classroom_number,
+      classroom_number: randomClassroom,
       date: timetable[randomSlotId].date,
       weight: 0,
       entropy: timetable[randomSlotId].entropy,
@@ -148,31 +158,34 @@ function populateSubject(
 
     const property = subjectTypeMap.get(subjectType) as keyof Subject;
     if (property) {
-      const value = subjectsArray[randomSubjectIndex][property];
+      const value = subjects[randomSubjectIndex][property];
 
       if (typeof value === "number") {
-        subjectsArray[randomSubjectIndex][property]--;
+        subjects[randomSubjectIndex][property]--;
+
+        if (!consistentWeeks) return;
 
         // Тут вместо +- 48 искать слот с такой же датой неделю в перёд
+        // А ещё нужно дополнительно проверять что аудитория и преподаватель свободны в это время
         if (value > 2) {
           populateSubject(
             randomSubjectIndex,
             subjectType,
             randomSlotId - 48,
-            randomClassroomIndex,
+            randomClassroom,
           );
           populateSubject(
             randomSubjectIndex,
             subjectType,
             randomSlotId + 48,
-            randomClassroomIndex,
+            randomClassroom,
           );
         } else if (value === 2) {
           populateSubject(
             randomSubjectIndex,
             subjectType,
             randomSlotId + 48,
-            randomClassroomIndex,
+            randomClassroom,
           );
         }
       }
@@ -182,18 +195,74 @@ function populateSubject(
   }
 }
 
+function loadData() {
+  const db = new Database("server/db/database.db", { verbose: console.log });
+
+  // const groupCount = db.prepare('SELECT COUNT(*) as count FROM Groups;').get() as GroupCountResult;
+
+  subjects = db.prepare("SELECT * FROM Subjects;").all() as Subject[];
+
+  const rows0 = db.prepare("SELECT * FROM SubjectClassrooms;").all() as SubjectClassroom[];
+  rows0.forEach((row) => {
+    const { subject_name, classroom_number } = row;
+
+    if (subjectClassrooms.has(subject_name)) {
+      subjectClassrooms.get(subject_name)?.push(classroom_number);
+    } else {
+      subjectClassrooms.set(subject_name, [classroom_number]);
+    }
+  });
+
+  classrooms = db.prepare("SELECT * FROM Classrooms;").all() as Classroom[];
+
+  const rows1 = db.prepare("SELECT * FROM SubjectLecturers;").all() as SubjectLecturer[];
+  rows1.forEach((row) => {
+    const { subject_name, lecturer_id } = row;
+
+    if (subjectLecturers.has(subject_name)) {
+      subjectLecturers.get(subject_name)?.push(lecturer_id);
+    } else {
+      subjectLecturers.set(subject_name, [lecturer_id]);
+    }
+  });
+
+  const rows2 = db.prepare("SELECT * FROM Lecturers;").all() as Lecturer[];
+  rows2.forEach((lecturer) => {
+    lecturers.set(lecturer.id, lecturer);
+  });
+
+  db.close();
+}
+
+function chooseLecturer(subject_name: string): number {
+  if (!subjectLecturers.has(subject_name)) return -1;
+
+  const lecturerIds = subjectLecturers.get(subject_name);
+
+  if (!lecturerIds) return -1;
+
+  const randomLecturerIndex = Math.floor(Math.random() * lecturerIds.length);
+
+  return lecturerIds[randomLecturerIndex];
+}
+
+function chooseClassroom(subject_name: string): string {
+  if (!subjectClassrooms.has(subject_name)) return "";
+
+  const classroom_numbers = subjectClassrooms.get(subject_name);
+
+  if (!classroom_numbers) return "";
+
+  const randomClassroomIndex = Math.floor(Math.random() * classroom_numbers.length);
+
+  return classroom_numbers[randomClassroomIndex];
+}
+
 export default defineEventHandler(async () => {
   const startTime = performance.now();
 
-  // Заполняем массив предметов
-  // const stmt = db.prepare('SELECT COUNT(*) as count FROM Groups;');
-  // const groupCount = stmt.get() as GroupCountResult;
-  const db = new Database("server/db/database.db", { verbose: console.log });
-  const stmt1 = db.prepare("SELECT * FROM Subjects;");
-  subjectsArray = stmt1.all() as Subject[];
-  const stmt2 = db.prepare("SELECT * FROM Classrooms;");
-  classroomArray = stmt2.all() as Classroom[];
-  db.close();
+  // Загрузка данных из базы данных
+  loadData();
 
   // Узнаём рабочие дни на семестр (весна 2024)
   const filePath = join(process.cwd(), "server/db", "workdays.json");
@@ -237,56 +306,42 @@ export default defineEventHandler(async () => {
     }
   }
 
-  while (subjectsArray.length > 0) {
+  while (subjects.length > 0) {
     // Выбор случайного предмета
-    const randomSubjectIndex = Math.floor(Math.random() * subjectsArray.length);
+    const randomSubjectIndex = Math.floor(Math.random() * subjects.length);
 
     // Выбор типа пары
     let subjectType = 2;
-    if (subjectsArray[randomSubjectIndex].sem_count > 0) subjectType = 1;
-    if (subjectsArray[randomSubjectIndex].lecture_count > 0) subjectType = 0;
+    if (subjects[randomSubjectIndex].sem_count > 0) subjectType = 1;
+    if (subjects[randomSubjectIndex].lecture_count > 0) subjectType = 0;
 
     // Выбор случайного слота (Softmax function)
     const randomSlotId: number = getRandomSlotByWeight();
 
     // Тут будет чек что преподаватель свободен;
+    // const randomLecturerId = chooseLecturer(subjects[randomSubjectIndex].subject_name);
 
     // Выбор случайного места
     const randomClassroomIndex = Math.floor(
-      Math.random() * classroomArray.length,
+      Math.random() * classrooms.length,
     );
 
-    // timetable[randomSlotId] = {
-    //   id: timetable[randomSlotId].id,
-    //   lecturer_id: timetable[randomSlotId].lecturer_id,
-    //   subject_name: subjectsArray[randomSubjectIndex].subject_name,
-    //   subject_type: subjectType,
-    //   classroom_number: classroomArray[randomClassroomIndex].classroom_number,
-    //   date: timetable[randomSlotId].date,
-    //   weight: 0,
-    //   entropy: timetable[randomSlotId].entropy,
-    // };
-
-    // // Удаляем тип предмета из массива предметов
-    // const property = subjectTypeMap.get(subjectType);
-    // if (property) subjectsArray[randomSubjectIndex][property]--;
-
-    // reduceWeights(randomSlotId, timetable[randomSlotId].date);
+    const randomClassroom = chooseClassroom(subjects[randomSubjectIndex].subject_name);
 
     populateSubject(
       randomSubjectIndex,
       subjectType,
       randomSlotId,
-      randomClassroomIndex,
+      randomClassroom,
     );
 
     // Проверяем есть ли ещё пары в этом предмете
     if (
-      subjectsArray[randomSubjectIndex].lecture_count === 0 &&
-      subjectsArray[randomSubjectIndex].sem_count === 0 &&
-      subjectsArray[randomSubjectIndex].lab_count === 0
+      subjects[randomSubjectIndex].lecture_count === 0 &&
+      subjects[randomSubjectIndex].sem_count === 0 &&
+      subjects[randomSubjectIndex].lab_count === 0
     ) {
-      subjectsArray.splice(randomSubjectIndex, 1);
+      subjects.splice(randomSubjectIndex, 1);
     }
   }
 

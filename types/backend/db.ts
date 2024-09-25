@@ -5,7 +5,7 @@ export interface Classroom {
 }
 
 export interface Lecturer {
-  lecturer_id: number;
+  id: number;
   institute: string;
   post: string;
   surname: string;
