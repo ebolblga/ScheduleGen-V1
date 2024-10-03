@@ -33,7 +33,7 @@ body {
   margin: 0;
   font-size: 14px;
   font-family: Montserrat;
-  background-color: #06070a;
+  background-color: #282828;
 }
 
 @font-face {

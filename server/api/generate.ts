@@ -4,7 +4,7 @@ import Database from "better-sqlite3";
 import type { Slot, Subject, SubjectClassroom, Classroom, SubjectLecturer, Lecturer } from "~/types/backend/db";
 import type { TimetableSubject } from "~/types/frontend/api";
 
-const weekDayWeights = [1, 2, 3, 2, 1, 0.1];
+const weekDayWeights = [1, 2.25, 3, 2.25, 1, 0.1];
 const timeSlotWeights = [0.25, 0.5, 1, 2, 3, 4, 5, 4];
 const dayReductionWeight = 0.4; // Чем меньше значение тем меньше пар в день
 const dayReductionFalloff = 0.1; // Чем меньше значение тем больше окон
@@ -322,9 +322,9 @@ export default defineEventHandler(async () => {
     // const randomLecturerId = chooseLecturer(subjects[randomSubjectIndex].subject_name);
 
     // Выбор случайного места
-    const randomClassroomIndex = Math.floor(
-      Math.random() * classrooms.length,
-    );
+    // const randomClassroomIndex = Math.floor(
+    //   Math.random() * classrooms.length,
+    // );
 
     const randomClassroom = chooseClassroom(subjects[randomSubjectIndex].subject_name);
 

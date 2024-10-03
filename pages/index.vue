@@ -19,6 +19,8 @@ useSeoMeta({
   twitterCard: "summary",
 });
 
+const weekDayWeights = ref([1, 2.25, 3, 2.25, 1, 0.1]);
+const timeSlotWeights = ref([0.04, 0.06, 0.13, 0.5, 2, 3.21, 3.66, 2.75]);
 const selectedDate = ref(new Date("2024-02-12"));
 const attrs = ref<Event[]>([]);
 const todaysList = ref<TimetableSubject[]>([]);
@@ -170,41 +172,85 @@ function generateDisabledSundays(start: Date, end: Date) {
 }
 </script>
 <template>
-  <div class="h-screen p-3 flex justify-center items-center">
-    <div class="w-[50vw] flex flex-col justify-center items-center">
-      <NuxtImg
-        width="300px"
-        class="select-none"
-        src="/stankin-logo-eng.svg"
-        placeholder
-      />
-      <BaseButton class="w-[300px] mt-5 mb-5" @click="generateSchedule">
-        Сгенерировать расписание!
-      </BaseButton>
-      <DatePicker
-        v-model="selectedDate"
-        :disabled-dates="disabledDates"
-        :attributes="attrs"
-        expanded
-        :first-day-of-week="2"
-        :color="'gray'"
-        locale="ru"
-        is-dark
-        borderless
-        title-position="left"
-        class="rounded-lg"
-        @click="getToday()"
-      />
-      <div
-        v-if="todaysList"
-        class="overflow-auto h-[40vh] w-full scrollbar mt-3"
-      >
-        <BaseSubjectCard
-          v-for="subject in todaysList"
-          :key="subject.id"
-          :subject="subject"
+  <div class="h-screen flex flex-row">
+    <div class="p-3 flex justify-center items-center">
+      <div class="w-[50vw] flex flex-col justify-center items-center">
+        <NuxtImg
+          width="300px"
+          class="select-none"
+          src="/stankin-logo-eng.svg"
+          placeholder
         />
+        <BaseButton class="w-[300px] mt-5 mb-5" @click="generateSchedule">
+          Сгенерировать расписание!
+        </BaseButton>
+        <DatePicker
+          v-model="selectedDate"
+          :disabled-dates="disabledDates"
+          :attributes="attrs"
+          expanded
+          :first-day-of-week="2"
+          :color="'gray'"
+          locale="ru"
+          is-dark
+          borderless
+          title-position="left"
+          class="rounded-lg"
+          @click="getToday()"
+        />
+        <div
+          v-if="todaysList"
+          class="overflow-auto h-[40vh] w-full scrollbar mt-3"
+        >
+          <BaseSubjectCard
+            v-for="subject in todaysList"
+            :key="subject.id"
+            :subject="subject"
+          />
+        </div>
       </div>
+    </div>
+    <div class="p-3 mx-auto">
+      <p class="text-lg text-accent">Коллапс волновой функции</p>
+      <div class="border-[1px] w-full border-primary"/>
+      <p class="mb-3">Параметры</p>
+      <BaseChart
+        v-model="weekDayWeights"
+        :max-weight="5"
+        title="Распределение учебных занятий по неделе"
+      >
+        <p>П</p>
+        <p>В</p>
+        <p>С</p>
+        <p>Ч</p>
+        <p>П</p>
+        <p>С</p>
+      </BaseChart>
+      <BaseChart
+        v-model="timeSlotWeights"
+        :max-weight="5"
+        title="Распределение учебных занятий по дню"
+        class="mt-3"
+      >
+        <p/>
+        <p/>
+        <p class="font-thin">08:30</p>
+        <p class="font-thin">10:20</p>
+        <p class="font-thin">12:20</p>
+        <p class="font-thin">14:10</p>
+        <p class="font-thin">16:00</p>
+        <p class="font-thin">18:00</p>
+        <p class="font-thin">19:40</p>
+        <p class="font-thin">21:20</p>
+        <p/>
+        <p/>
+      </BaseChart>
+      <p>Параметр комкования пар: 0.4</p>
+      <p>Параметр "оконности": 0.1</p>
+      <p>Рекурсивно распространять занятия понедельно: true</p>
+      <p class="text-lg text-accent mt-3">Генетический алгоритм</p>
+      <div class="border-[1px] w-full border-primary"/>
+      <p class="mb-3">Параметры</p>
     </div>
   </div>
 </template>
