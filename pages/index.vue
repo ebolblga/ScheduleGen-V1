@@ -21,6 +21,9 @@ useSeoMeta({
 
 const weekDayWeights = ref([1, 2.25, 3, 2.25, 1, 0.1]);
 const timeSlotWeights = ref([0.04, 0.06, 0.13, 0.5, 2, 3.21, 3.66, 2.75]);
+const dayReductionWeight = ref(0.4);  // Чем меньше значение тем меньше пар в день
+const dayReductionFalloff = ref(0.1); // Чем меньше значение тем больше окон
+const consistentWeeks = ref(true); // Старается соблюсти одинаковые предметы по неделям
 const selectedDate = ref(new Date("2024-02-12"));
 const attrs = ref<Event[]>([]);
 const todaysList = ref<TimetableSubject[]>([]);
@@ -210,7 +213,7 @@ function generateDisabledSundays(start: Date, end: Date) {
         </div>
       </div>
     </div>
-    <div class="p-3 mx-auto">
+    <div class="p-3 mx-auto overflow-auto scrollbar">
       <p class="text-lg text-accent">Коллапс волновой функции</p>
       <div class="border-[1px] w-full border-primary"/>
       <p class="mb-3">Параметры</p>
@@ -245,9 +248,10 @@ function generateDisabledSundays(start: Date, end: Date) {
         <p/>
         <p/>
       </BaseChart>
-      <p>Параметр комкования пар: 0.4</p>
-      <p>Параметр "оконности": 0.1</p>
-      <p>Рекурсивно распространять занятия понедельно: true</p>
+      <BaseRange id="range-input1" v-model="dayReductionWeight" min="0" max="10" class="mt-3">Параметр комкования пар:</BaseRange>
+      <BaseRange id="range-input2" v-model="dayReductionFalloff" min="0" max="1" class="mt-3">Параметр "оконности":</BaseRange>
+      <!-- <p>Рекурсивно распространять занятия понедельно: true</p> -->
+      <BaseCheckbox v-model="consistentWeeks" class="mt-3">Рекурсивно распространять занятия понедельно</BaseCheckbox>
       <p class="text-lg text-accent mt-3">Генетический алгоритм</p>
       <div class="border-[1px] w-full border-primary"/>
       <p class="mb-3">Параметры</p>

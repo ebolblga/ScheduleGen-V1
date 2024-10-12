@@ -15,6 +15,7 @@ const subjectClassrooms = new Map<string, string[]>();
 let classrooms: Classroom[] = [];
 const subjectLecturers = new Map<string, number[]>();
 const lecturers = new Map<number, Lecturer>();
+let holidays = new Set<string>;
 
 const timeMap: { [key: number]: number } = {
   0: 8 * 60 + 30, // 8:30 -> 510 minutes
@@ -40,6 +41,14 @@ const subjectTypeMap = new Map<number, keyof Subject>([
 ]);
 
 function computeWeight(date: Date, timeSlot: number): number {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+
+  if (holidays.has(`${year}-${month}-${day}`)) {
+    return 0; // Возвращает 0 если это праздник
+  }
+
   const dayOfWeek = date.getDay() - 1;
   const weekDayWeight = weekDayWeights[dayOfWeek];
   const timeSlotWeight = timeSlotWeights[timeSlot];
@@ -195,7 +204,7 @@ function populateSubject(
   }
 }
 
-function loadData() {
+async function loadData() {
   const db = new Database("server/db/database.db", { verbose: console.log });
 
   // const groupCount = db.prepare('SELECT COUNT(*) as count FROM Groups;').get() as GroupCountResult;
@@ -232,6 +241,11 @@ function loadData() {
   });
 
   db.close();
+
+  // Загрузка праздников в Set
+  const filePath = join(process.cwd(), "server/db", "holidays.json");
+  const data = await fs.readFile(filePath, "utf8");
+  holidays = new Set(JSON.parse(data));
 }
 
 function chooseLecturer(subject_name: string): number {

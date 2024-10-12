@@ -8,10 +8,11 @@ const isWorkday = (date: Date, holidays: Date[]): boolean => {
   // Понедельник - Суббота: 1-6
   const isWeekday = day >= 1 && day <= 6;
   // Проверяем, не является ли день праздником
-  const isHoliday = holidays.some(
-    (holiday) => holiday.getTime() === date.getTime(),
-  );
-  return isWeekday && !isHoliday;
+  // const isHoliday = holidays.some(
+  //   (holiday) => holiday.getTime() === date.getTime(),
+  // );
+  // return isWeekday && !isHoliday;
+  return isWeekday;
 };
 
 export default defineEventHandler(async () => {
