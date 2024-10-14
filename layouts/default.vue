@@ -41,7 +41,6 @@ body {
   src: url("/Montserrat-Regular.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
-  font-display: swap;
 }
 
 .scrollbar::-webkit-scrollbar {
