@@ -1,38 +1,38 @@
 {
-  "name": "nuxt-app",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
-    "lint": "yarn lint:eslint && yarn lint:prettier",
-    "lint:eslint": "eslint .",
-    "lint:prettier": "prettier . --check",
-    "lintfix": "eslint . --fix && prettier --write --list-different ."
-  },
-  "dependencies": {
-    "@nuxt/eslint": "^0.5.7",
-    "@nuxt/fonts": "^0.10.0",
-    "@nuxt/image": "^1.8.0",
-    "@popperjs/core": "^2.11.8",
-    "@types/d3": "^7.4.3",
-    "better-sqlite3": "^9.6.0",
-    "d3": "^7.9.0",
-    "nuxt": "^3.13.0",
-    "v-calendar": "^3.1.2",
-    "vue": "latest",
-    "vue-router": "latest"
-  },
-  "devDependencies": {
-    "@nuxtjs/tailwindcss": "^6.12.1",
-    "@types/better-sqlite3": "^7.6.11",
-    "eslint": "^9.11.1",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-prettier": "^5.2.1",
-    "prettier": "^3.3.3",
-    "typescript": "^5.6.2"
-  }
+    "name": "nuxt-app",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "nuxt build",
+        "dev": "nuxt dev",
+        "generate": "nuxt generate",
+        "preview": "nuxt preview",
+        "postinstall": "nuxt prepare",
+        "lint": "yarn lint:eslint && yarn lint:prettier",
+        "lint:eslint": "eslint .",
+        "lint:prettier": "prettier . --check",
+        "lintfix": "eslint . --fix && prettier --write --list-different ."
+    },
+    "dependencies": {
+        "@nuxt/eslint": "0.6.0",
+        "@nuxt/fonts": "^0.10.0",
+        "@nuxt/image": "^1.8.0",
+        "@popperjs/core": "^2.11.8",
+        "@types/d3": "^7.4.3",
+        "better-sqlite3": "11.5.0",
+        "d3": "^7.9.0",
+        "nuxt": "^3.13.0",
+        "v-calendar": "^3.1.2",
+        "vue": "latest",
+        "vue-router": "latest"
+    },
+    "devDependencies": {
+        "@nuxtjs/tailwindcss": "^6.12.1",
+        "@types/better-sqlite3": "^7.6.11",
+        "eslint": "^9.11.1",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-prettier": "^5.2.1",
+        "prettier": "^3.3.3",
+        "typescript": "^5.6.2"
+    }
 }
